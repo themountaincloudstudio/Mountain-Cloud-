@@ -1,0 +1,1328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mountain Cloud — Creative Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --teal:#0d4a3e;--teal-light:#1a6b59;--teal-glow:rgba(13,74,62,0.4);
+  --cream:#f0edcc;--cream-dim:#e8e4b8;--cream-faint:rgba(240,237,204,0.08);
+  --gold:#c9a84c;--gold-dim:rgba(201,168,76,0.25);
+  --dark:#080f0e;--dark2:#0c1a18;
+  --text:rgba(240,237,204,0.85);--muted:rgba(240,237,204,0.45);
+}
+html{scroll-behavior:smooth}
+body{background:var(--dark);color:var(--cream);font-family:'Inter',sans-serif;overflow-x:hidden;cursor:none}
+
+/* CURSOR */
+.cursor{position:fixed;width:12px;height:12px;background:var(--cream);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:width 0.2s,height 0.2s,background 0.2s;mix-blend-mode:difference}
+.cursor-follower{position:fixed;width:40px;height:40px;border:1px solid rgba(240,237,204,0.35);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:all 0.12s ease}
+.cursor.hover{width:6px;height:6px}
+.cursor-follower.hover{width:56px;height:56px;border-color:var(--gold)}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:22px 60px;display:flex;justify-content:space-between;align-items:center;transition:all 0.4s}
+nav.scrolled{background:rgba(8,15,14,0.92);backdrop-filter:blur(20px);padding:16px 60px;border-bottom:1px solid rgba(240,237,204,0.07)}
+.nav-logo{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--cream);letter-spacing:0.5px;cursor:pointer;text-decoration:none}
+.nav-logo span{color:var(--gold)}
+.nav-links{display:flex;gap:36px;list-style:none}
+.nav-links a{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color 0.3s;font-weight:500}
+.nav-links a:hover,.nav-links a.active{color:var(--cream)}
+.nav-cta{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;background:transparent;border:1px solid rgba(240,237,204,0.3);color:var(--cream);padding:10px 24px;border-radius:2px;text-decoration:none;transition:all 0.3s;font-weight:500}
+.nav-cta:hover{background:var(--cream);color:var(--dark)}
+.menu-btn{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.menu-btn span{width:24px;height:1.5px;background:var(--cream);transition:all 0.3s}
+
+/* PAGE SYSTEM */
+.page{display:none;min-height:100vh}
+.page.active{display:block}
+
+/* ============ HOME PAGE ============ */
+#hero{position:relative;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#hero-canvas{position:absolute;inset:0;z-index:0}
+.hero-content{position:relative;z-index:2;text-align:center;padding:0 20px}
+.hero-eyebrow{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:24px;opacity:0;animation:fadeUp 1s 0.3s ease forwards}
+.hero-title{font-family:'Cormorant Garamond',serif;font-size:clamp(64px,10vw,130px);font-weight:400;line-height:0.9;letter-spacing:-2px;margin-bottom:32px;opacity:0;animation:fadeUp 1s 0.5s ease forwards}
+.hero-title em{font-style:italic;color:var(--gold)}
+.hero-sub{font-size:14px;color:var(--muted);letter-spacing:0.5px;max-width:420px;margin:0 auto 48px;line-height:1.8;opacity:0;animation:fadeUp 1s 0.7s ease forwards}
+.hero-ctas{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;opacity:0;animation:fadeUp 1s 0.9s ease forwards}
+.btn-primary{background:var(--cream);color:var(--dark);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:14px 36px;border-radius:2px;text-decoration:none;font-weight:600;transition:all 0.3s;border:none;cursor:pointer}
+.btn-primary:hover{background:var(--gold);color:var(--dark)}
+.btn-ghost{background:transparent;color:var(--cream);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:14px 36px;border-radius:2px;text-decoration:none;font-weight:500;transition:all 0.3s;border:1px solid rgba(240,237,204,0.25);cursor:pointer}
+.btn-ghost:hover{border-color:var(--cream)}
+.scroll-hint{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;animation:fadeUp 1s 1.3s ease forwards}
+.scroll-hint span{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--muted)}
+.scroll-line{width:1px;height:60px;background:linear-gradient(var(--gold),transparent);animation:scrollLine 1.8s ease infinite}
+@keyframes scrollLine{0%{opacity:0;transform:scaleY(0);transform-origin:top}50%{opacity:1;transform:scaleY(1)}100%{opacity:0;transform:scaleY(1);transform-origin:bottom}}
+
+/* SERVICES SECTION (HOME) */
+.services-home{padding:140px 60px;position:relative}
+.services-home::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(240,237,204,0.12),transparent)}
+.s-label{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.s-title{font-family:'Cormorant Garamond',serif;font-size:clamp(36px,5vw,64px);font-weight:400;line-height:1.05;letter-spacing:-1px;margin-bottom:80px;max-width:600px}
+.services-grid-home{display:grid;grid-template-columns:repeat(2,1fr);gap:2px;background:rgba(240,237,204,0.05);border:1px solid rgba(240,237,204,0.05)}
+.svc-card{background:var(--dark);padding:56px 48px;cursor:pointer;transition:background 0.4s;position:relative;overflow:hidden}
+.svc-card::after{content:'';position:absolute;inset:0;background:var(--teal);opacity:0;transition:opacity 0.4s;z-index:0}
+.svc-card:hover::after{opacity:0.06}
+.svc-card>*{position:relative;z-index:1}
+.svc-num{font-family:'Cormorant Garamond',serif;font-size:13px;color:var(--gold);letter-spacing:2px;margin-bottom:24px;display:block}
+.svc-icon-3d{width:60px;height:60px;margin-bottom:24px}
+.svc-card h3{font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:500;color:var(--cream);margin-bottom:14px;line-height:1.2}
+.svc-card p{font-size:13px;color:var(--muted);line-height:1.75;margin-bottom:28px}
+.svc-link{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:gap 0.3s}
+.svc-link:hover{gap:14px}
+.svc-link::after{content:'→'}
+
+/* REEL SECTION */
+.reel-section{padding:0 60px 140px;display:flex;align-items:center;gap:80px}
+.reel-text{flex:1}
+.reel-visual{flex:1;aspect-ratio:16/10;background:var(--dark2);border-radius:4px;overflow:hidden;position:relative;border:1px solid rgba(240,237,204,0.08)}
+.reel-canvas-wrap{position:absolute;inset:0}
+.reel-play{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:80px;height:80px;border-radius:50%;border:1.5px solid rgba(240,237,204,0.5);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.3s}
+.reel-play:hover{background:rgba(240,237,204,0.1);border-color:var(--cream)}
+.reel-play svg{fill:var(--cream);margin-left:4px}
+
+/* STATS */
+.stats-section{padding:100px 60px;border-top:1px solid rgba(240,237,204,0.06);border-bottom:1px solid rgba(240,237,204,0.06);display:grid;grid-template-columns:repeat(4,1fr);gap:0}
+.stat-item{padding:40px;border-right:1px solid rgba(240,237,204,0.06);text-align:center}
+.stat-item:last-child{border-right:none}
+.stat-num{font-family:'Cormorant Garamond',serif;font-size:clamp(48px,5vw,72px);font-weight:400;color:var(--cream);line-height:1;display:block}
+.stat-label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-top:8px}
+
+/* CTA SECTION */
+.cta-section{padding:140px 60px;text-align:center;position:relative;overflow:hidden}
+#cta-canvas{position:absolute;inset:0;z-index:0}
+.cta-content{position:relative;z-index:1}
+.cta-section .s-title{margin:0 auto 16px;text-align:center}
+.cta-section p{font-size:15px;color:var(--muted);margin-bottom:48px;line-height:1.7}
+
+/* FOOTER */
+footer{padding:60px;border-top:1px solid rgba(240,237,204,0.07);display:grid;grid-template-columns:1fr auto 1fr;align-items:center}
+.footer-logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--cream)}
+.footer-copy{font-size:11px;color:var(--muted);text-align:center;letter-spacing:0.5px}
+.footer-links{display:flex;gap:28px;justify-content:flex-end}
+.footer-links a{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);text-decoration:none;transition:color 0.3s}
+.footer-links a:hover{color:var(--cream)}
+
+/* ============ INNER PAGES ============ */
+.page-hero{padding:180px 60px 100px;position:relative;overflow:hidden}
+#page-canvas{position:absolute;inset:0;z-index:0}
+.page-hero-content{position:relative;z-index:1}
+.page-tag{font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--gold);margin-bottom:20px;display:block}
+.page-title{font-family:'Cormorant Garamond',serif;font-size:clamp(52px,8vw,96px);font-weight:400;line-height:0.95;letter-spacing:-2px;margin-bottom:28px}
+.page-desc{font-size:15px;color:var(--muted);max-width:520px;line-height:1.8}
+
+/* DIGITAL MARKETING PAGE */
+.dm-services{padding:100px 60px;display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(240,237,204,0.05)}
+.dm-svc{background:var(--dark);padding:48px 40px;transition:background 0.35s}
+.dm-svc:hover{background:var(--dark2)}
+.dm-svc-icon{font-size:36px;margin-bottom:20px}
+.dm-svc h3{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;margin-bottom:12px;color:var(--cream)}
+.dm-svc p{font-size:13px;color:var(--muted);line-height:1.7}
+
+/* PORTFOLIO SECTION */
+.portfolio-section{padding:80px 60px}
+.portfolio-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:60px}
+.port-item{aspect-ratio:4/3;background:var(--dark2);border-radius:4px;overflow:hidden;position:relative;border:1px solid rgba(240,237,204,0.07);cursor:pointer;transition:transform 0.4s}
+.port-item:hover{transform:scale(1.02)}
+.port-item:first-child{grid-column:span 2;aspect-ratio:auto;min-height:300px}
+.port-canvas{position:absolute;inset:0}
+.port-overlay{position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(8,15,14,0.9));opacity:0;transition:opacity 0.4s;display:flex;flex-direction:column;justify-content:flex-end;padding:28px}
+.port-item:hover .port-overlay{opacity:1}
+.port-tag{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.port-title{font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--cream)}
+
+/* VIDEO PRODUCTION PAGE */
+.vp-categories{padding:80px 60px;display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:rgba(240,237,204,0.05)}
+.vp-cat{background:var(--dark);padding:52px 48px;cursor:pointer;transition:all 0.4s;position:relative;overflow:hidden}
+.vp-cat:hover{background:var(--dark2)}
+.vp-cat-thumb{width:100%;aspect-ratio:16/9;background:var(--dark2);border-radius:3px;overflow:hidden;margin-bottom:24px;position:relative}
+.vp-canvas{position:absolute;inset:0}
+.vp-cat-label{font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.vp-cat h3{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:500;color:var(--cream);margin-bottom:10px}
+.vp-cat p{font-size:13px;color:var(--muted);line-height:1.65}
+
+/* WEDDING PAGE */
+.wedding-hero-special{background:linear-gradient(180deg,var(--dark) 0%,#0a1a15 100%)}
+.wedding-categories{padding:80px 60px;display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.wed-card{border:1px solid rgba(240,237,204,0.08);border-radius:4px;overflow:hidden;cursor:pointer;transition:border-color 0.4s}
+.wed-card:hover{border-color:rgba(201,168,76,0.4)}
+.wed-card-visual{aspect-ratio:4/3;background:var(--dark2);position:relative;overflow:hidden}
+.wed-canvas{position:absolute;inset:0}
+.wed-card-body{padding:32px}
+.wed-card-num{font-family:'Cormorant Garamond',serif;font-size:12px;letter-spacing:2px;color:var(--gold);margin-bottom:10px}
+.wed-card h3{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:500;color:var(--cream);margin-bottom:10px}
+.wed-card p{font-size:13px;color:var(--muted);line-height:1.65}
+
+/* EVENTS PAGE */
+.events-list{padding:80px 60px;display:flex;flex-direction:column;gap:1px;background:rgba(240,237,204,0.05)}
+.event-row{background:var(--dark);padding:48px 60px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:60px;align-items:center;cursor:pointer;transition:background 0.35s}
+.event-row:hover{background:var(--dark2)}
+.event-num{font-family:'Cormorant Garamond',serif;font-size:72px;font-weight:300;color:rgba(240,237,204,0.06);line-height:1}
+.event-info h3{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:500;color:var(--cream);margin-bottom:8px}
+.event-info p{font-size:13px;color:var(--muted);line-height:1.65}
+.event-tags{display:flex;flex-wrap:wrap;gap:8px}
+.e-tag{font-size:10px;letter-spacing:1.5px;text-transform:uppercase;border:1px solid rgba(240,237,204,0.15);color:var(--muted);padding:6px 14px;border-radius:2px;transition:all 0.3s}
+.event-row:hover .e-tag{border-color:rgba(201,168,76,0.4);color:var(--gold)}
+
+/* CONTACT SECTION (shared) */
+.contact-section{padding:120px 60px;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:start;border-top:1px solid rgba(240,237,204,0.07)}
+.contact-info h2{font-family:'Cormorant Garamond',serif;font-size:clamp(36px,4vw,56px);font-weight:400;line-height:1.1;letter-spacing:-1px;margin-bottom:24px}
+.contact-info p{font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:40px}
+.contact-detail{display:flex;flex-direction:column;gap:20px}
+.cd-item{display:flex;gap:16px;align-items:flex-start}
+.cd-icon{width:40px;height:40px;border:1px solid rgba(240,237,204,0.12);border-radius:2px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.cd-text strong{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--gold);display:block;margin-bottom:4px}
+.cd-text span{font-size:14px;color:var(--text)}
+.contact-form{display:flex;flex-direction:column;gap:16px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.form-group{display:flex;flex-direction:column;gap:8px}
+.form-group label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+.form-group input,.form-group textarea,.form-group select{background:rgba(240,237,204,0.04);border:1px solid rgba(240,237,204,0.1);color:var(--cream);padding:14px 16px;border-radius:2px;font-family:'Inter',sans-serif;font-size:14px;transition:border-color 0.3s;outline:none;-webkit-appearance:none}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:rgba(201,168,76,0.5)}
+.form-group textarea{resize:vertical;min-height:120px}
+.form-group select option{background:var(--dark)}
+.form-submit{background:var(--cream);color:var(--dark);font-size:12px;letter-spacing:2px;text-transform:uppercase;padding:16px 40px;border-radius:2px;font-weight:600;border:none;cursor:pointer;transition:all 0.3s;align-self:flex-start}
+.form-submit:hover{background:var(--gold)}
+
+/* DIVIDER */
+.divider{height:1px;background:linear-gradient(90deg,transparent,rgba(240,237,204,0.1),transparent);margin:0 60px}
+
+/* REVEAL ANIMATIONS */
+.reveal{opacity:0;transform:translateY(40px);transition:opacity 0.8s ease,transform 0.8s ease}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.reveal-left{opacity:0;transform:translateX(-40px);transition:opacity 0.8s ease,transform 0.8s ease}
+.reveal-left.visible{opacity:1;transform:translateX(0)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+
+/* MOBILE NAV */
+.mobile-nav{position:fixed;inset:0;background:rgba(8,15,14,0.98);backdrop-filter:blur(20px);z-index:200;display:none;flex-direction:column;justify-content:center;align-items:center;gap:40px}
+.mobile-nav.open{display:flex}
+.mobile-nav a{font-family:'Cormorant Garamond',serif;font-size:42px;font-weight:400;color:var(--cream);text-decoration:none;opacity:0.7;transition:opacity 0.3s}
+.mobile-nav a:hover{opacity:1}
+.mobile-close{position:absolute;top:28px;right:28px;font-size:28px;color:var(--cream);cursor:pointer;background:none;border:none}
+
+/* PROCESS SECTION */
+.process-section{padding:100px 60px;background:var(--dark2)}
+.process-steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:rgba(240,237,204,0.05);margin-top:60px}
+.p-step{background:var(--dark2);padding:40px 32px}
+.p-step-num{font-family:'Cormorant Garamond',serif;font-size:48px;font-weight:300;color:rgba(240,237,204,0.08);margin-bottom:16px;line-height:1}
+.p-step h3{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:500;color:var(--cream);margin-bottom:10px}
+.p-step p{font-size:13px;color:var(--muted);line-height:1.65}
+
+/* TESTIMONIALS */
+.testi-section-inner{padding:100px 60px;background:var(--dark2)}
+.testi-grid-inner{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:60px}
+.testi-card-inner{border:1px solid rgba(240,237,204,0.07);border-radius:4px;padding:36px;transition:border-color 0.4s}
+.testi-card-inner:hover{border-color:rgba(201,168,76,0.3)}
+.testi-quote-mark{font-family:'Cormorant Garamond',serif;font-size:60px;color:var(--gold);line-height:0.8;margin-bottom:20px;opacity:0.4}
+.testi-text-inner{font-size:14px;color:var(--text);line-height:1.8;font-style:italic;margin-bottom:24px}
+.testi-name-inner{font-family:'Cormorant Garamond',serif;font-size:16px;font-weight:500;color:var(--cream);margin-bottom:4px}
+.testi-role-inner{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold)}
+
+/* RESPONSIVE */
+@media(max-width:1024px){
+  .stats-section{grid-template-columns:repeat(2,1fr)}
+  .stat-item{border-bottom:1px solid rgba(240,237,204,0.06)}
+  .services-grid-home{grid-template-columns:1fr}
+  .dm-services{grid-template-columns:1fr 1fr}
+  .vp-categories{grid-template-columns:1fr}
+  .contact-section{grid-template-columns:1fr;gap:60px}
+  .process-steps{grid-template-columns:repeat(2,1fr)}
+  .testi-grid-inner{grid-template-columns:1fr 1fr}
+}
+@media(max-width:768px){
+  nav{padding:18px 24px}
+  nav.scrolled{padding:14px 24px}
+  .nav-links,.nav-cta{display:none}
+  .menu-btn{display:flex}
+  .services-home,.reel-section,.portfolio-section,.contact-section,.dm-services,.vp-categories,.wedding-categories,.events-list,.process-section,.testi-section-inner,.stats-section,.cta-section{padding-left:24px;padding-right:24px}
+  .page-hero{padding:140px 24px 80px}
+  .reel-section{flex-direction:column;gap:40px}
+  .dm-services{grid-template-columns:1fr}
+  .portfolio-grid{grid-template-columns:1fr}
+  .port-item:first-child{grid-column:span 1}
+  .vp-categories{grid-template-columns:1fr}
+  .wedding-categories{grid-template-columns:1fr}
+  .events-list{padding:60px 24px}
+  .event-row{grid-template-columns:1fr;padding:32px 24px;gap:20px}
+  .form-row{grid-template-columns:1fr}
+  .process-steps{grid-template-columns:1fr 1fr}
+  .testi-grid-inner{grid-template-columns:1fr}
+  footer{grid-template-columns:1fr;gap:20px;text-align:center;padding:40px 24px}
+  .footer-links{justify-content:center}
+  .stats-section{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- CURSOR -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-follower" id="cursorFollower"></div>
+
+<!-- MOBILE NAV -->
+<div class="mobile-nav" id="mobileNav">
+  <button class="mobile-close" onclick="closeMobileNav()">✕</button>
+  <a href="#" onclick="showPage('home');closeMobileNav()">Home</a>
+  <a href="#" onclick="showPage('digital');closeMobileNav()">Digital Marketing</a>
+  <a href="#" onclick="showPage('video');closeMobileNav()">Video Production</a>
+  <a href="#" onclick="showPage('wedding');closeMobileNav()">Weddings</a>
+  <a href="#" onclick="showPage('events');closeMobileNav()">Events</a>
+</div>
+
+<!-- NAV -->
+<nav id="mainNav">
+  <a class="nav-logo" onclick="showPage('home')" href="#">Mountain <span>Cloud</span></a>
+  <ul class="nav-links">
+    <li><a href="#" onclick="showPage('home')" id="nav-home" class="active">Home</a></li>
+    <li><a href="#" onclick="showPage('digital')" id="nav-digital">Digital Marketing</a></li>
+    <li><a href="#" onclick="showPage('video')" id="nav-video">Video Production</a></li>
+    <li><a href="#" onclick="showPage('wedding')" id="nav-wedding">Weddings</a></li>
+    <li><a href="#" onclick="showPage('events')" id="nav-events">Events</a></li>
+  </ul>
+  <a href="#" class="nav-cta" onclick="scrollToContact()">Get in Touch</a>
+  <div class="menu-btn" onclick="openMobileNav()"><span></span><span></span><span></span></div>
+</nav>
+
+<!-- ==================== HOME PAGE ==================== -->
+<div class="page active" id="page-home">
+  <!-- HERO -->
+  <section id="hero">
+    <canvas id="hero-canvas"></canvas>
+    <div class="hero-content">
+      <p class="hero-eyebrow">Creative Studio · Chennai</p>
+      <h1 class="hero-title">Mountain<br><em>Cloud</em></h1>
+      <p class="hero-sub">Where stories become cinematic experiences. We craft films, campaigns, and memories that endure.</p>
+      <div class="hero-ctas">
+        <a href="#" class="btn-primary" onclick="showPage('video')">Our Work</a>
+        <a href="#" class="btn-ghost" onclick="scrollToContact()">Start a Project</a>
+      </div>
+    </div>
+    <div class="scroll-hint">
+      <span>Scroll</span>
+      <div class="scroll-line"></div>
+    </div>
+  </section>
+
+  <!-- SERVICES GRID -->
+  <section class="services-home">
+    <p class="s-label reveal">What We Do</p>
+    <h2 class="s-title reveal">Four disciplines,<br>one vision</h2>
+    <div class="services-grid-home">
+      <div class="svc-card reveal" onclick="showPage('digital')">
+        <span class="svc-num">01</span>
+        <canvas class="svc-icon-3d" id="svc-canvas-1"></canvas>
+        <h3>Digital Marketing</h3>
+        <p>Strategic campaigns that connect your brand with the right audience across every digital touchpoint.</p>
+        <a href="#" class="svc-link" onclick="showPage('digital')">Explore</a>
+      </div>
+      <div class="svc-card reveal" onclick="showPage('video')">
+        <span class="svc-num">02</span>
+        <canvas class="svc-icon-3d" id="svc-canvas-2"></canvas>
+        <h3>Video Production</h3>
+        <p>Commercials, brand films, product launches — cinematic storytelling at every scale.</p>
+        <a href="#" class="svc-link" onclick="showPage('video')">Explore</a>
+      </div>
+      <div class="svc-card reveal" onclick="showPage('wedding')">
+        <span class="svc-num">03</span>
+        <canvas class="svc-icon-3d" id="svc-canvas-3"></canvas>
+        <h3>Weddings</h3>
+        <p>Your love story, captured in its most intimate and magnificent moments. Films that stand the test of time.</p>
+        <a href="#" class="svc-link" onclick="showPage('wedding')">Explore</a>
+      </div>
+      <div class="svc-card reveal" onclick="showPage('events')">
+        <span class="svc-num">04</span>
+        <canvas class="svc-icon-3d" id="svc-canvas-4"></canvas>
+        <h3>Events</h3>
+        <p>Corporate events, concerts, exhibitions — we document the moments that define organisations.</p>
+        <a href="#" class="svc-link" onclick="showPage('events')">Explore</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- REEL SECTION -->
+  <section class="reel-section">
+    <div class="reel-text reveal-left">
+      <p class="s-label">Our Reel</p>
+      <h2 class="s-title" style="max-width:400px;font-size:clamp(32px,4vw,52px)">Built on craft,<br>driven by story</h2>
+      <p style="font-size:14px;color:var(--muted);line-height:1.8;margin-bottom:32px">Every frame we shoot carries intent. We believe in the power of visual language to move, persuade, and inspire. Our work spans industries — but our standard never changes.</p>
+      <a href="#" class="btn-ghost" onclick="showPage('video')">View All Work</a>
+    </div>
+    <div class="reel-visual reveal">
+      <canvas class="reel-canvas-wrap" id="reel-canvas"></canvas>
+      <div class="reel-play">
+        <svg width="22" height="22" viewBox="0 0 24 24"><polygon points="5,3 19,12 5,21"/></svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-section">
+    <div class="stat-item reveal">
+      <span class="stat-num" data-target="150">0</span>
+      <span class="stat-label">Projects Completed</span>
+    </div>
+    <div class="stat-item reveal">
+      <span class="stat-num" data-target="80">0</span>
+      <span class="stat-label">Happy Clients</span>
+    </div>
+    <div class="stat-item reveal">
+      <span class="stat-num" data-target="5">0</span>
+      <span class="stat-label">Years Experience</span>
+    </div>
+    <div class="stat-item reveal">
+      <span class="stat-num" data-target="30">0</span>
+      <span class="stat-label">Weddings Filmed</span>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <section class="cta-section">
+    <canvas id="cta-canvas"></canvas>
+    <div class="cta-content">
+      <p class="s-label">Let's Create Together</p>
+      <h2 class="s-title">Ready to tell<br>your story?</h2>
+      <p>Whether it's a brand campaign, a wedding film, or a product launch — let's make something remarkable.</p>
+      <a href="#" class="btn-primary" onclick="scrollToContact()">Start a Conversation</a>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <div id="home-contact"></div>
+  <section class="contact-section reveal" style="padding-top:100px">
+    <div class="contact-info">
+      <h2>Get in<br>touch with us</h2>
+      <p>We'd love to hear about your project. Reach out and let's discuss how Mountain Cloud can bring your vision to life.</p>
+      <div class="contact-detail">
+        <div class="cd-item">
+          <div class="cd-icon">📞</div>
+          <div class="cd-text"><strong>Phone</strong><span>+91 73973 99123</span></div>
+        </div>
+        <div class="cd-item">
+          <div class="cd-icon">✉️</div>
+          <div class="cd-text"><strong>Email</strong><span>themountaincloudstudio@gmail.com</span></div>
+        </div>
+        <div class="cd-item">
+          <div class="cd-icon">📍</div>
+          <div class="cd-text"><strong>Location</strong><span>Chennai, Tamil Nadu, India</span></div>
+        </div>
+      </div>
+    </div>
+    <form class="contact-form" onsubmit="return false">
+      <div class="form-row">
+        <div class="form-group"><label>Name</label><input type="text" placeholder="Your name"></div>
+        <div class="form-group"><label>Email</label><input type="email" placeholder="your@email.com"></div>
+      </div>
+      <div class="form-group">
+        <label>Service</label>
+        <select>
+          <option value="">Select a service</option>
+          <option>Digital Marketing</option>
+          <option>Video Production</option>
+          <option>Wedding Films</option>
+          <option>Event Coverage</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Message</label><textarea placeholder="Tell us about your project..."></textarea></div>
+      <button class="form-submit">Send Message</button>
+    </form>
+  </section>
+
+  <footer>
+    <div class="footer-logo">Mountain <span style="color:var(--gold)">Cloud</span></div>
+    <p class="footer-copy">© 2025 Mountain Cloud Studio · Chennai</p>
+    <div class="footer-links">
+      <a href="#">Instagram</a>
+      <a href="#">YouTube</a>
+      <a href="#">LinkedIn</a>
+    </div>
+  </footer>
+</div>
+
+<!-- ==================== DIGITAL MARKETING PAGE ==================== -->
+<div class="page" id="page-digital">
+  <section class="page-hero" style="background:linear-gradient(160deg,var(--dark) 60%,#0d1f1a)">
+    <canvas id="dm-canvas" style="position:absolute;inset:0;z-index:0"></canvas>
+    <div class="page-hero-content">
+      <span class="page-tag">Digital Marketing</span>
+      <h1 class="page-title">Grow beyond<br><em style="font-style:italic;color:var(--gold)">the noise</em></h1>
+      <p class="page-desc">Data-driven strategies that amplify your brand, expand your reach, and convert audiences into loyal customers.</p>
+    </div>
+  </section>
+
+  <div class="dm-services">
+    <div class="dm-svc reveal">
+      <div class="dm-svc-icon">📊</div>
+      <h3>Social Media Management</h3>
+      <p>Strategic content creation, scheduling, and community management across Instagram, Facebook, LinkedIn, and YouTube to build engaged audiences.</p>
+    </div>
+    <div class="dm-svc reveal">
+      <div class="dm-svc-icon">🎯</div>
+      <h3>Performance Advertising</h3>
+      <p>Targeted Meta Ads, Google Ads, and YouTube campaigns designed to maximise ROI and drive qualified traffic to your business.</p>
+    </div>
+    <div class="dm-svc reveal">
+      <div class="dm-svc-icon">✍️</div>
+      <h3>Content Strategy</h3>
+      <p>Compelling copy, graphics, and short-form video content that communicates your brand's voice and connects with your ideal audience.</p>
+    </div>
+    <div class="dm-svc reveal">
+      <div class="dm-svc-icon">🔍</div>
+      <h3>SEO & Digital Presence</h3>
+      <p>Search engine optimisation, Google My Business management, and online reputation building to ensure you're found when it matters.</p>
+    </div>
+    <div class="dm-svc reveal">
+      <div class="dm-svc-icon">📈</div>
+      <h3>Analytics & Reporting</h3>
+      <p>Clear, actionable reports that track performance, reveal insights, and guide smarter marketing decisions every month.</p>
+    </div>
+    <div class="dm-svc reveal">
+      <div class="dm-svc-icon">🎨</div>
+      <h3>Brand Identity & Design</h3>
+      <p>Visual identity systems, logo design, and brand guidelines that make your business instantly recognisable and memorable.</p>
+    </div>
+  </div>
+
+  <!-- PORTFOLIO SECTION -->
+  <section class="portfolio-section">
+    <p class="s-label">Our Work</p>
+    <h2 class="s-title" style="font-family:'Cormorant Garamond',serif;font-size:clamp(32px,4vw,52px);font-weight:400;letter-spacing:-1px">Digital Marketing Portfolio</h2>
+    <p style="font-size:13px;color:var(--muted);margin-top:-40px;margin-bottom:0">Campaigns, results, and stories from our clients.</p>
+    <div class="portfolio-grid">
+      <div class="port-item reveal">
+        <canvas class="port-canvas" id="dm-port-1"></canvas>
+        <div class="port-overlay">
+          <span class="port-tag">Social Media</span>
+          <h3 class="port-title">Brand Growth Campaign</h3>
+        </div>
+      </div>
+      <div class="port-item reveal">
+        <canvas class="port-canvas" id="dm-port-2"></canvas>
+        <div class="port-overlay">
+          <span class="port-tag">Paid Ads</span>
+          <h3 class="port-title">Meta Ads — 3x ROAS</h3>
+        </div>
+      </div>
+      <div class="port-item reveal">
+        <canvas class="port-canvas" id="dm-port-3"></canvas>
+        <div class="port-overlay">
+          <span class="port-tag">Content</span>
+          <h3 class="port-title">Content Strategy Overhaul</h3>
+        </div>
+      </div>
+      <div class="port-item reveal">
+        <canvas class="port-canvas" id="dm-port-4"></canvas>
+        <div class="port-overlay">
+          <span class="port-tag">SEO</span>
+          <h3 class="port-title">Organic Reach Growth</h3>
+        </div>
+      </div>
+      <div class="port-item reveal">
+        <canvas class="port-canvas" id="dm-port-5"></canvas>
+        <div class="port-overlay">
+          <span class="port-tag">Branding</span>
+          <h3 class="port-title">Full Brand Identity</h3>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-section reveal">
+    <div class="stat-item"><span class="stat-num" data-target="50">0</span><span class="stat-label">Brands Managed</span></div>
+    <div class="stat-item"><span class="stat-num" data-target="3">0</span><span class="stat-label">Avg ROAS Achieved</span></div>
+    <div class="stat-item"><span class="stat-num" data-target="10">0</span><span class="stat-label">M+ Impressions</span></div>
+    <div class="stat-item"><span class="stat-num" data-target="92">0</span><span class="stat-label">% Client Retention</span></div>
+  </div>
+
+  <section class="contact-section reveal">
+    <div class="contact-info">
+      <h2>Ready to grow your brand?</h2>
+      <p>Let's talk about your digital marketing goals and build a strategy that delivers real results.</p>
+      <div class="contact-detail">
+        <div class="cd-item"><div class="cd-icon">📞</div><div class="cd-text"><strong>Phone</strong><span>+91 73973 99123</span></div></div>
+        <div class="cd-item"><div class="cd-icon">✉️</div><div class="cd-text"><strong>Email</strong><span>themountaincloudstudio@gmail.com</span></div></div>
+      </div>
+    </div>
+    <form class="contact-form" onsubmit="return false">
+      <div class="form-row">
+        <div class="form-group"><label>Name</label><input type="text" placeholder="Your name"></div>
+        <div class="form-group"><label>Brand</label><input type="text" placeholder="Brand / Company"></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" placeholder="your@email.com"></div>
+      <div class="form-group"><label>What do you need?</label><textarea placeholder="Describe your marketing goals..."></textarea></div>
+      <button class="form-submit">Get in Touch</button>
+    </form>
+  </section>
+
+  <footer>
+    <div class="footer-logo">Mountain <span style="color:var(--gold)">Cloud</span></div>
+    <p class="footer-copy">© 2025 Mountain Cloud Studio · Chennai</p>
+    <div class="footer-links"><a href="#">Instagram</a><a href="#">YouTube</a><a href="#">LinkedIn</a></div>
+  </footer>
+</div>
+
+<!-- ==================== VIDEO PRODUCTION PAGE ==================== -->
+<div class="page" id="page-video">
+  <section class="page-hero" style="background:var(--dark)">
+    <canvas id="vp-canvas-hero" style="position:absolute;inset:0;z-index:0"></canvas>
+    <div class="page-hero-content">
+      <span class="page-tag">Video Production</span>
+      <h1 class="page-title">Frame by<br><em style="color:var(--gold)">frame</em></h1>
+      <p class="page-desc">Cinematic production for brands, hospitality, e-commerce, and beyond. We bring stories to life with precision and artistry.</p>
+    </div>
+  </section>
+
+  <div class="vp-categories">
+    <div class="vp-cat reveal">
+      <div class="vp-cat-thumb"><canvas class="vp-canvas" id="vp1"></canvas></div>
+      <span class="vp-cat-label">Brand</span>
+      <h3>Commercial Shoots</h3>
+      <p>High-impact commercials crafted for television, digital, and out-of-home — designed to stop the scroll and drive action.</p>
+    </div>
+    <div class="vp-cat reveal">
+      <div class="vp-cat-thumb"><canvas class="vp-canvas" id="vp2"></canvas></div>
+      <span class="vp-cat-label">Brand</span>
+      <h3>Brand Films</h3>
+      <p>Long-form storytelling that communicates your brand's values, culture, and mission with cinematic depth.</p>
+    </div>
+    <div class="vp-cat reveal">
+      <div class="vp-cat-thumb"><canvas class="vp-canvas" id="vp3"></canvas></div>
+      <span class="vp-cat-label">Launch</span>
+      <h3>Product Launch Videos</h3>
+      <p>Compelling reveal videos that generate anticipation, showcase features, and drive launch-day conversions.</p>
+    </div>
+    <div class="vp-cat reveal">
+      <div class="vp-cat-thumb"><canvas class="vp-canvas" id="vp4"></canvas></div>
+      <span class="vp-cat-label">Hospitality</span>
+      <h3>Hotels & Resorts</h3>
+      <p>Immersive property tours and brand films that sell the experience before guests ever arrive.</p>
+    </div>
+    <div class="vp-cat reveal">
+      <div class="vp-cat-thumb"><canvas class="vp-canvas" id="vp5"></canvas></div>
+      <span class="vp-cat-label">Hospitality</span>
+      <h3>Restaurants & Cafes</h3>
+      <p>Food films and atmosphere reels that evoke taste, texture, and the feeling of being there.</p>
+    </div>
+    <div class="vp-cat reveal">
+      <div class="vp-cat-thumb"><canvas class="vp-canvas" id="vp6"></canvas></div>
+      <span class="vp-cat-label">E-Commerce</span>
+      <h3>E-Commerce & Product Brands</h3>
+      <p>Clean, conversion-focused product videos for online stores — from hero shots to unboxing films.</p>
+    </div>
+    <div class="vp-cat reveal">
+      <div class="vp-cat-thumb"><canvas class="vp-canvas" id="vp7"></canvas></div>
+      <span class="vp-cat-label">Social</span>
+      <h3>Reels & Advertisements</h3>
+      <p>Short-form vertical content engineered for Instagram Reels, YouTube Shorts, and digital ad placements.</p>
+    </div>
+  </div>
+
+  <section class="process-section">
+    <p class="s-label">How We Work</p>
+    <h2 class="s-title" style="font-family:'Cormorant Garamond',serif;font-size:clamp(32px,4vw,52px);font-weight:400;letter-spacing:-1px">Our production<br>process</h2>
+    <div class="process-steps">
+      <div class="p-step"><div class="p-step-num">01</div><h3>Brief & Discovery</h3><p>We learn your brand, audience, and goals in depth before a single frame is shot.</p></div>
+      <div class="p-step"><div class="p-step-num">02</div><h3>Pre-Production</h3><p>Script, storyboard, location scouting, and full crew planning — we prepare every detail.</p></div>
+      <div class="p-step"><div class="p-step-num">03</div><h3>Production</h3><p>On-set execution with professional equipment, lighting, and direction for cinematic results.</p></div>
+      <div class="p-step"><div class="p-step-num">04</div><h3>Post & Delivery</h3><p>Colour grading, sound design, and delivery in all required formats and resolutions.</p></div>
+    </div>
+  </section>
+
+  <section class="testi-section-inner">
+    <p class="s-label">Client Words</p>
+    <h2 class="s-title" style="font-family:'Cormorant Garamond',serif;font-size:clamp(32px,4vw,52px);font-weight:400;letter-spacing:-1px">What they say</h2>
+    <div class="testi-grid-inner">
+      <div class="testi-card-inner"><div class="testi-quote-mark">"</div><p class="testi-text-inner">The brand film Mountain Cloud created for us exceeded every expectation. Our social reach doubled in the month after launch.</p><div class="testi-name-inner">Rahul Mehta</div><div class="testi-role-inner">CEO, Meridian Retail</div></div>
+      <div class="testi-card-inner"><div class="testi-quote-mark">"</div><p class="testi-text-inner">Absolute professionals from brief to final delivery. The hotel reel they shot for us has become our most viewed content ever.</p><div class="testi-name-inner">Priya Nair</div><div class="testi-role-inner">Marketing Director, The Azure Hotel</div></div>
+      <div class="testi-card-inner"><div class="testi-quote-mark">"</div><p class="testi-text-inner">Their product launch video helped us sell out in 48 hours. The attention to detail and cinematic quality was outstanding.</p><div class="testi-name-inner">Arun Kumar</div><div class="testi-role-inner">Founder, Craft Co.</div></div>
+    </div>
+  </section>
+
+  <section class="contact-section reveal">
+    <div class="contact-info">
+      <h2>Let's start your production</h2>
+      <p>Tell us about your video project and we'll get back to you with a custom production plan.</p>
+      <div class="contact-detail">
+        <div class="cd-item"><div class="cd-icon">📞</div><div class="cd-text"><strong>Phone</strong><span>+91 73973 99123</span></div></div>
+        <div class="cd-item"><div class="cd-icon">✉️</div><div class="cd-text"><strong>Email</strong><span>themountaincloudstudio@gmail.com</span></div></div>
+      </div>
+    </div>
+    <form class="contact-form" onsubmit="return false">
+      <div class="form-row">
+        <div class="form-group"><label>Name</label><input type="text" placeholder="Your name"></div>
+        <div class="form-group"><label>Brand</label><input type="text" placeholder="Brand / Company"></div>
+      </div>
+      <div class="form-group">
+        <label>Video Type</label>
+        <select>
+          <option value="">Select type</option>
+          <option>Commercial Shoot</option>
+          <option>Brand Film</option>
+          <option>Product Launch</option>
+          <option>Hotel / Resort</option>
+          <option>Restaurant / Cafe</option>
+          <option>E-Commerce</option>
+          <option>Reels / Ads</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Project Details</label><textarea placeholder="Describe your vision..."></textarea></div>
+      <button class="form-submit">Request a Quote</button>
+    </form>
+  </section>
+  <footer>
+    <div class="footer-logo">Mountain <span style="color:var(--gold)">Cloud</span></div>
+    <p class="footer-copy">© 2025 Mountain Cloud Studio · Chennai</p>
+    <div class="footer-links"><a href="#">Instagram</a><a href="#">YouTube</a><a href="#">LinkedIn</a></div>
+  </footer>
+</div>
+
+<!-- ==================== WEDDING PAGE ==================== -->
+<div class="page" id="page-wedding">
+  <section class="page-hero wedding-hero-special">
+    <canvas id="wed-canvas-hero" style="position:absolute;inset:0;z-index:0"></canvas>
+    <div class="page-hero-content">
+      <span class="page-tag">Wedding Films</span>
+      <h1 class="page-title">Love, captured<br><em style="color:var(--gold)">forever</em></h1>
+      <p class="page-desc">Every wedding is a once-in-a-lifetime story. We honour it with cinematic films that will be treasured across generations.</p>
+    </div>
+  </section>
+
+  <div class="wedding-categories">
+    <div class="wed-card reveal">
+      <div class="wed-card-visual"><canvas class="wed-canvas" id="wed1"></canvas></div>
+      <div class="wed-card-body">
+        <div class="wed-card-num">01</div>
+        <h3>Wedding Films</h3>
+        <p>Full-length cinematic wedding films — beautifully edited with music, vows, and every emotion that made your day unforgettable.</p>
+      </div>
+    </div>
+    <div class="wed-card reveal">
+      <div class="wed-card-visual"><canvas class="wed-canvas" id="wed2"></canvas></div>
+      <div class="wed-card-body">
+        <div class="wed-card-num">02</div>
+        <h3>Pre-Wedding Shoots</h3>
+        <p>Romantic and cinematic pre-wedding photo and video sessions at handpicked locations — your love story begins here.</p>
+      </div>
+    </div>
+    <div class="wed-card reveal">
+      <div class="wed-card-visual"><canvas class="wed-canvas" id="wed3"></canvas></div>
+      <div class="wed-card-body">
+        <div class="wed-card-num">03</div>
+        <h3>Reception Highlights</h3>
+        <p>Vibrant, energy-filled highlight reels of your reception — the dances, toasts, laughter, and moments you'll want to relive forever.</p>
+      </div>
+    </div>
+    <div class="wed-card reveal">
+      <div class="wed-card-visual"><canvas class="wed-canvas" id="wed4"></canvas></div>
+      <div class="wed-card-body">
+        <div class="wed-card-num">04</div>
+        <h3>Wedding Clients</h3>
+        <p>We've had the honour of filming weddings across Tamil Nadu and beyond — each one a unique story we've told with care and artistry.</p>
+      </div>
+    </div>
+  </div>
+
+  <section class="testi-section-inner" style="background:var(--dark)">
+    <p class="s-label">From Our Couples</p>
+    <h2 class="s-title" style="font-family:'Cormorant Garamond',serif;font-size:clamp(32px,4vw,52px);font-weight:400;letter-spacing:-1px">Words from the heart</h2>
+    <div class="testi-grid-inner">
+      <div class="testi-card-inner"><div class="testi-quote-mark">"</div><p class="testi-text-inner">We cried watching our wedding film. Every small moment we thought we'd missed — it was all there. Mountain Cloud is truly gifted.</p><div class="testi-name-inner">Ananya & Vikram</div><div class="testi-role-inner">Wedding · Chennai</div></div>
+      <div class="testi-card-inner"><div class="testi-quote-mark">"</div><p class="testi-text-inner">The pre-wedding shoot was absolutely magical. They made us feel so comfortable and the visuals were breathtaking.</p><div class="testi-name-inner">Deepika & Arjun</div><div class="testi-role-inner">Pre-Wedding · Ooty</div></div>
+      <div class="testi-card-inner"><div class="testi-quote-mark">"</div><p class="testi-text-inner">Our reception highlight reel has been viewed thousands of times by family. The editing, the music, the pacing — everything was perfect.</p><div class="testi-name-inner">Meera & Suresh</div><div class="testi-role-inner">Reception · Coimbatore</div></div>
+    </div>
+  </section>
+
+  <section class="contact-section reveal">
+    <div class="contact-info">
+      <h2>Book your<br>wedding date</h2>
+      <p>Wedding dates fill up quickly. Reach out early to ensure we can be part of your most important day.</p>
+      <div class="contact-detail">
+        <div class="cd-item"><div class="cd-icon">📞</div><div class="cd-text"><strong>Phone</strong><span>+91 73973 99123</span></div></div>
+        <div class="cd-item"><div class="cd-icon">✉️</div><div class="cd-text"><strong>Email</strong><span>themountaincloudstudio@gmail.com</span></div></div>
+      </div>
+    </div>
+    <form class="contact-form" onsubmit="return false">
+      <div class="form-row">
+        <div class="form-group"><label>Your Name</label><input type="text" placeholder="Bride / Groom name"></div>
+        <div class="form-group"><label>Wedding Date</label><input type="date"></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" placeholder="your@email.com"></div>
+      <div class="form-group">
+        <label>Package</label>
+        <select>
+          <option value="">Select package</option>
+          <option>Wedding Film</option>
+          <option>Pre-Wedding Shoot</option>
+          <option>Reception Highlights</option>
+          <option>Complete Package</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Tell us more</label><textarea placeholder="Venue, style preferences, special requests..."></textarea></div>
+      <button class="form-submit">Check Availability</button>
+    </form>
+  </section>
+  <footer>
+    <div class="footer-logo">Mountain <span style="color:var(--gold)">Cloud</span></div>
+    <p class="footer-copy">© 2025 Mountain Cloud Studio · Chennai</p>
+    <div class="footer-links"><a href="#">Instagram</a><a href="#">YouTube</a><a href="#">LinkedIn</a></div>
+  </footer>
+</div>
+
+<!-- ==================== EVENTS PAGE ==================== -->
+<div class="page" id="page-events">
+  <section class="page-hero" style="background:var(--dark)">
+    <canvas id="ev-canvas-hero" style="position:absolute;inset:0;z-index:0"></canvas>
+    <div class="page-hero-content">
+      <span class="page-tag">Events</span>
+      <h1 class="page-title">Every moment<br><em style="color:var(--gold)">documented</em></h1>
+      <p class="page-desc">Corporate events, concerts, exhibitions — we capture the energy, scale, and significance of every occasion.</p>
+    </div>
+  </section>
+
+  <div class="events-list">
+    <div class="event-row reveal">
+      <div class="event-num">01</div>
+      <div class="event-info">
+        <h3>Corporate Events</h3>
+        <p>Conferences, product launches, award ceremonies, and AGMs — filmed with multi-camera setups and broadcast quality.</p>
+      </div>
+      <div class="event-tags">
+        <span class="e-tag">Multi-Cam</span>
+        <span class="e-tag">Live Coverage</span>
+        <span class="e-tag">Broadcast Quality</span>
+        <span class="e-tag">Same-Day Edit</span>
+      </div>
+    </div>
+    <div class="event-row reveal">
+      <div class="event-num">02</div>
+      <div class="event-info">
+        <h3>Concerts & Performances</h3>
+        <p>Music concerts, theatrical performances, and live shows captured with dynamic camera work and professional audio sync.</p>
+      </div>
+      <div class="event-tags">
+        <span class="e-tag">Dynamic Coverage</span>
+        <span class="e-tag">Audio Sync</span>
+        <span class="e-tag">Stage Lighting</span>
+        <span class="e-tag">Aerial Shots</span>
+      </div>
+    </div>
+    <div class="event-row reveal">
+      <div class="event-num">03</div>
+      <div class="event-info">
+        <h3>Exhibitions & Expos</h3>
+        <p>Trade shows, art exhibitions, brand activations, and cultural festivals — we document the energy and detail of every exhibit.</p>
+      </div>
+      <div class="event-tags">
+        <span class="e-tag">360° Coverage</span>
+        <span class="e-tag">Interviews</span>
+        <span class="e-tag">Time-lapse</span>
+        <span class="e-tag">Highlight Reel</span>
+      </div>
+    </div>
+  </div>
+
+  <section class="process-section">
+    <p class="s-label">Our Approach</p>
+    <h2 class="s-title" style="font-family:'Cormorant Garamond',serif;font-size:clamp(32px,4vw,52px);font-weight:400;letter-spacing:-1px">How we cover<br>your event</h2>
+    <div class="process-steps">
+      <div class="p-step"><div class="p-step-num">01</div><h3>Event Brief</h3><p>We understand your event's purpose, schedule, and key moments to capture.</p></div>
+      <div class="p-step"><div class="p-step-num">02</div><h3>Crew & Equipment</h3><p>We assign the right crew size and camera setup for your event scale.</p></div>
+      <div class="p-step"><div class="p-step-num">03</div><h3>On-Day Capture</h3><p>Discreet, professional coverage from setup to final curtain call.</p></div>
+      <div class="p-step"><div class="p-step-num">04</div><h3>Delivery</h3><p>Highlight reel and full footage delivered in agreed formats and timelines.</p></div>
+    </div>
+  </section>
+
+  <!-- STATS -->
+  <div class="stats-section reveal">
+    <div class="stat-item"><span class="stat-num" data-target="80">0</span><span class="stat-label">Events Covered</span></div>
+    <div class="stat-item"><span class="stat-num" data-target="40">0</span><span class="stat-label">Corporate Clients</span></div>
+    <div class="stat-item"><span class="stat-num" data-target="20">0</span><span class="stat-label">Concerts Filmed</span></div>
+    <div class="stat-item"><span class="stat-num" data-target="15">0</span><span class="stat-label">Exhibition Projects</span></div>
+  </div>
+
+  <section class="contact-section reveal">
+    <div class="contact-info">
+      <h2>Cover your next event</h2>
+      <p>Let us document your event with the professionalism and artistry it deserves.</p>
+      <div class="contact-detail">
+        <div class="cd-item"><div class="cd-icon">📞</div><div class="cd-text"><strong>Phone</strong><span>+91 73973 99123</span></div></div>
+        <div class="cd-item"><div class="cd-icon">✉️</div><div class="cd-text"><strong>Email</strong><span>themountaincloudstudio@gmail.com</span></div></div>
+      </div>
+    </div>
+    <form class="contact-form" onsubmit="return false">
+      <div class="form-row">
+        <div class="form-group"><label>Name</label><input type="text" placeholder="Your name"></div>
+        <div class="form-group"><label>Event Date</label><input type="date"></div>
+      </div>
+      <div class="form-group"><label>Email</label><input type="email" placeholder="your@email.com"></div>
+      <div class="form-group">
+        <label>Event Type</label>
+        <select>
+          <option value="">Select type</option>
+          <option>Corporate Event</option>
+          <option>Concert / Performance</option>
+          <option>Exhibition / Expo</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label>Event Details</label><textarea placeholder="Venue, expected attendance, deliverables needed..."></textarea></div>
+      <button class="form-submit">Get a Quote</button>
+    </form>
+  </section>
+  <footer>
+    <div class="footer-logo">Mountain <span style="color:var(--gold)">Cloud</span></div>
+    <p class="footer-copy">© 2025 Mountain Cloud Studio · Chennai</p>
+    <div class="footer-links"><a href="#">Instagram</a><a href="#">YouTube</a><a href="#">LinkedIn</a></div>
+  </footer>
+</div>
+
+<script>
+// ============ NAVIGATION ============
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+  const el = document.getElementById('nav-' + name);
+  if(el) el.classList.add('active');
+  window.scrollTo(0,0);
+  setTimeout(initReveal, 100);
+  if(name === 'video') initVPCanvases();
+  if(name === 'wedding') initWedCanvases();
+  if(name === 'events') initEvCanvases();
+  if(name === 'digital') initDMCanvases();
+}
+
+function scrollToContact() {
+  const contact = document.getElementById('home-contact') || document.querySelector('.contact-section');
+  if(contact) contact.scrollIntoView({behavior:'smooth'});
+}
+
+function openMobileNav(){ document.getElementById('mobileNav').classList.add('open'); }
+function closeMobileNav(){ document.getElementById('mobileNav').classList.remove('open'); }
+
+// ============ NAV SCROLL ============
+window.addEventListener('scroll', () => {
+  document.getElementById('mainNav').classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// ============ CURSOR ============
+const cursor = document.getElementById('cursor');
+const follower = document.getElementById('cursorFollower');
+let mx=0,my=0,fx=0,fy=0;
+document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; cursor.style.left=mx+'px'; cursor.style.top=my+'px'; });
+function animFollower(){ fx+=(mx-fx)*0.12; fy+=(my-fy)*0.12; follower.style.left=fx+'px'; follower.style.top=fy+'px'; requestAnimationFrame(animFollower); }
+animFollower();
+document.querySelectorAll('a,button,.svc-card,.port-item,.vp-cat,.wed-card,.event-row').forEach(el => {
+  el.addEventListener('mouseenter', () => { cursor.classList.add('hover'); follower.classList.add('hover'); });
+  el.addEventListener('mouseleave', () => { cursor.classList.remove('hover'); follower.classList.remove('hover'); });
+});
+
+// ============ REVEAL ON SCROLL ============
+function initReveal(){
+  const obs = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('visible'); obs.unobserve(e.target); }});
+  }, {threshold:0.12});
+  document.querySelectorAll('.reveal,.reveal-left').forEach(el => { el.classList.remove('visible'); obs.observe(el); });
+  // counter animation
+  document.querySelectorAll('[data-target]').forEach(el => {
+    const obs2 = new IntersectionObserver(entries => {
+      if(entries[0].isIntersecting){ countUp(el); obs2.unobserve(el); }
+    }, {threshold:0.5});
+    obs2.observe(el);
+  });
+}
+function countUp(el){
+  const target = parseInt(el.dataset.target);
+  let current = 0;
+  const step = target / 60;
+  const timer = setInterval(() => {
+    current += step;
+    if(current >= target){ el.textContent = target + '+'; clearInterval(timer); }
+    else el.textContent = Math.floor(current);
+  }, 24);
+}
+setTimeout(initReveal, 200);
+
+// ============ THREE.JS HERO ============
+(function initHero(){
+  const canvas = document.getElementById('hero-canvas');
+  if(!canvas || !window.THREE) return;
+  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+  camera.position.z = 5;
+
+  // Floating particles
+  const geo = new THREE.BufferGeometry();
+  const N = 2000;
+  const pos = new Float32Array(N*3);
+  const col = new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    pos[i*3] = (Math.random()-0.5)*20;
+    pos[i*3+1] = (Math.random()-0.5)*20;
+    pos[i*3+2] = (Math.random()-0.5)*20;
+    const t = Math.random();
+    col[i*3] = 0.05 + t*0.8;
+    col[i*3+1] = 0.29 + t*0.3;
+    col[i*3+2] = 0.24 + t*0.1;
+  }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color', new THREE.BufferAttribute(col,3));
+  const mat = new THREE.PointsMaterial({size:0.04,vertexColors:true,transparent:true,opacity:0.7});
+  const points = new THREE.Points(geo, mat);
+  scene.add(points);
+
+  // Mountain silhouette (icosahedron as stylized mountain)
+  const mGeo = new THREE.IcosahedronGeometry(1.8, 1);
+  const mMat = new THREE.MeshPhongMaterial({color:0x0d4a3e,emissive:0x0a2e28,wireframe:false,transparent:true,opacity:0.18});
+  const mountain = new THREE.Mesh(mGeo, mMat);
+  mountain.position.y = -0.5;
+  scene.add(mountain);
+
+  // Torus ring
+  const tGeo = new THREE.TorusGeometry(2.2, 0.015, 16, 120);
+  const tMat = new THREE.MeshBasicMaterial({color:0xc9a84c, transparent:true, opacity:0.3});
+  const torus = new THREE.Mesh(tGeo, tMat);
+  scene.add(torus);
+
+  const light1 = new THREE.PointLight(0x0d4a3e, 2, 20);
+  light1.position.set(3,3,3);
+  scene.add(light1);
+  const light2 = new THREE.PointLight(0xc9a84c, 1, 20);
+  light2.position.set(-3,-2,2);
+  scene.add(light2);
+  scene.add(new THREE.AmbientLight(0x111111));
+
+  let mx2=0,my2=0;
+  document.addEventListener('mousemove', e => { mx2=(e.clientX/window.innerWidth-0.5); my2=(e.clientY/window.innerHeight-0.5); });
+
+  function resize(){
+    const w=canvas.parentElement.clientWidth, h=canvas.parentElement.clientHeight;
+    renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix();
+  }
+  resize();
+  window.addEventListener('resize', resize);
+
+  let t=0;
+  (function loop(){
+    requestAnimationFrame(loop);
+    t+=0.005;
+    points.rotation.y = t*0.1 + mx2*0.3;
+    points.rotation.x = -my2*0.2;
+    mountain.rotation.y = t*0.3;
+    mountain.rotation.x = 0.3 + my2*0.2;
+    torus.rotation.x = t*0.4 + Math.PI/4;
+    torus.rotation.y = t*0.2;
+    renderer.render(scene, camera);
+  })();
+})();
+
+// ============ REEL CANVAS ============
+(function initReel(){
+  const canvas = document.getElementById('reel-canvas');
+  if(!canvas || !window.THREE) return;
+  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50, 1, 0.1, 100);
+  camera.position.z = 4;
+
+  // Film reel shape
+  const geo = new THREE.TorusGeometry(1.2, 0.1, 16, 80);
+  const mat = new THREE.MeshPhongMaterial({color:0x0d4a3e, emissive:0x051a16, shininess:80});
+  const reel = new THREE.Mesh(geo, mat);
+  scene.add(reel);
+
+  // Spokes
+  for(let i=0;i<6;i++){
+    const sg = new THREE.CylinderGeometry(0.02, 0.02, 2.2, 8);
+    const sm = new THREE.MeshBasicMaterial({color:0x1a6b59});
+    const spoke = new THREE.Mesh(sg, sm);
+    spoke.rotation.z = (i/6)*Math.PI;
+    reel.add(spoke);
+  }
+
+  // Center hub
+  const hGeo = new THREE.CylinderGeometry(0.25, 0.25, 0.15, 32);
+  const hMat = new THREE.MeshPhongMaterial({color:0xc9a84c});
+  const hub = new THREE.Mesh(hGeo, hMat);
+  hub.rotation.x = Math.PI/2;
+  reel.add(hub);
+
+  const light = new THREE.PointLight(0xc9a84c, 2, 10);
+  light.position.set(2,2,3);
+  scene.add(light);
+  scene.add(new THREE.AmbientLight(0x0d4a3e, 0.5));
+
+  function resize(){
+    const w=canvas.parentElement.clientWidth, h=canvas.parentElement.clientHeight;
+    renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix();
+  }
+  resize(); window.addEventListener('resize',resize);
+  let t=0;
+  (function loop(){ requestAnimationFrame(loop); t+=0.01; reel.rotation.z=t; reel.rotation.y=Math.sin(t*0.3)*0.3; renderer.render(scene,camera); })();
+})();
+
+// ============ CTA CANVAS ============
+(function initCTA(){
+  const canvas = document.getElementById('cta-canvas');
+  if(!canvas || !window.THREE) return;
+  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+  camera.position.z = 6;
+  const geo = new THREE.BufferGeometry();
+  const N = 800;
+  const pos = new Float32Array(N*3);
+  for(let i=0;i<N;i++){ pos[i*3]=(Math.random()-0.5)*16; pos[i*3+1]=(Math.random()-0.5)*8; pos[i*3+2]=(Math.random()-0.5)*8; }
+  geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({color:0xc9a84c, size:0.05, transparent:true, opacity:0.5}));
+  scene.add(pts);
+  function resize(){ const w=canvas.parentElement.clientWidth,h=canvas.parentElement.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize',resize);
+  let t=0;
+  (function loop(){ requestAnimationFrame(loop); t+=0.004; pts.rotation.y=t; pts.rotation.x=t*0.3; renderer.render(scene,camera); })();
+})();
+
+// ============ SERVICE MINI CANVASES ============
+function initMiniCanvas(id, hue){
+  const canvas = document.getElementById(id);
+  if(!canvas || !window.THREE) return;
+  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(60,60);
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(50,1,0.1,10);
+  camera.position.z = 3;
+  const geo = new THREE.OctahedronGeometry(0.9, 0);
+  const mat = new THREE.MeshPhongMaterial({color:hue, emissive:0x0a2e28, shininess:120, wireframe:false});
+  const mesh = new THREE.Mesh(geo, mat);
+  scene.add(mesh);
+  scene.add(new THREE.PointLight(0xc9a84c, 2, 8));
+  scene.add(new THREE.AmbientLight(0x0d4a3e, 0.8));
+  let t=0;
+  (function loop(){ requestAnimationFrame(loop); t+=0.02; mesh.rotation.x=t; mesh.rotation.y=t*0.7; renderer.render(scene,camera); })();
+}
+initMiniCanvas('svc-canvas-1', 0x0d4a3e);
+initMiniCanvas('svc-canvas-2', 0x1a6b59);
+initMiniCanvas('svc-canvas-3', 0x0d4a3e);
+initMiniCanvas('svc-canvas-4', 0x1a6b59);
+
+// ============ VP CANVASES ============
+function initVPCanvases(){
+  const colors = [0x0d4a3e,0x1a6b59,0x0a3028,0x16594a,0x0d4a3e,0x1a6b59,0x0a3028];
+  for(let i=1;i<=7;i++){
+    const canvas = document.getElementById('vp'+i);
+    if(!canvas || canvas.dataset.init) continue;
+    canvas.dataset.init = '1';
+    const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55,1,0.1,100);
+    camera.position.z = 4;
+    const geos = [new THREE.BoxGeometry(1.2,1.2,1.2), new THREE.SphereGeometry(0.9,32,32), new THREE.ConeGeometry(0.8,1.6,6), new THREE.TorusGeometry(0.8,0.25,16,80), new THREE.OctahedronGeometry(1,0), new THREE.IcosahedronGeometry(1,0), new THREE.TetrahedronGeometry(1.2,0)];
+    const geo = geos[i-1];
+    const mat = new THREE.MeshPhongMaterial({color:colors[i-1], emissive:0x040f0d, shininess:80, transparent:true, opacity:0.85});
+    const mesh = new THREE.Mesh(geo, mat);
+    scene.add(mesh);
+    const wGeo = geos[i-1].clone ? geos[i-1] : new THREE.BoxGeometry(1.2,1.2,1.2);
+    const wMat = new THREE.MeshBasicMaterial({color:0xc9a84c, wireframe:true, transparent:true, opacity:0.15});
+    scene.add(new THREE.Mesh(geo, wMat));
+    scene.add(new THREE.PointLight(0xc9a84c, 2, 12));
+    scene.add(new THREE.AmbientLight(0x0d4a3e, 0.6));
+    let t = Math.random()*100;
+    (function(m, r, s, c, ca){
+      function loop(){ requestAnimationFrame(loop); t+=0.015; m.rotation.x=t*0.8; m.rotation.y=t; const w=canvas.parentElement.clientWidth, h=canvas.parentElement.clientHeight; if(w && h){ r.setSize(w,h); ca.aspect=w/h; ca.updateProjectionMatrix(); } r.render(s,ca); }
+      loop();
+    })(mesh, renderer, scene, colors[i-1], camera);
+  }
+}
+
+// ============ WEDDING CANVASES ============
+function initWedCanvases(){
+  for(let i=1;i<=4;i++){
+    const canvas = document.getElementById('wed'+i);
+    if(!canvas || canvas.dataset.init) continue;
+    canvas.dataset.init = '1';
+    const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55,1,0.1,100);
+    camera.position.z = 4;
+    // Heart-like particles
+    const geo = new THREE.BufferGeometry();
+    const N = 500;
+    const pos = new Float32Array(N*3);
+    for(let j=0;j<N;j++){
+      const a = Math.random()*Math.PI*2;
+      const r = 0.5 + Math.random()*1.2;
+      pos[j*3] = Math.cos(a)*r;
+      pos[j*3+1] = Math.sin(a)*r + (Math.random()-0.5)*0.8;
+      pos[j*3+2] = (Math.random()-0.5)*2;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    const pts = new THREE.Points(geo, new THREE.PointsMaterial({color:0xc9a84c, size:0.04, transparent:true, opacity:0.6}));
+    scene.add(pts);
+    const tGeo = new THREE.TorusGeometry(1.4, 0.02, 16, 100);
+    const tMat = new THREE.MeshBasicMaterial({color:0x0d4a3e, transparent:true, opacity:0.5});
+    scene.add(new THREE.Mesh(tGeo, tMat));
+    scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+    let t = Math.random()*100;
+    (function(p, r, s, c){
+      function loop(){ requestAnimationFrame(loop); t+=0.008; p.rotation.y=t; p.rotation.x=Math.sin(t)*0.3; const w=canvas.parentElement.clientWidth,h=canvas.parentElement.clientHeight; if(w&&h){r.setSize(w,h);c.aspect=w/h;c.updateProjectionMatrix();} r.render(s,c); }
+      loop();
+    })(pts, renderer, scene, camera);
+  }
+}
+
+// ============ DM CANVASES ============
+function initDMCanvases(){
+  for(let i=1;i<=5;i++){
+    const canvas = document.getElementById('dm-port-'+i);
+    if(!canvas || canvas.dataset.init) continue;
+    canvas.dataset.init = '1';
+    const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(55,1,0.1,100);
+    camera.position.z = 5;
+    const N = 800;
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(N*3);
+    const col = new Float32Array(N*3);
+    for(let j=0;j<N;j++){
+      pos[j*3]=(Math.random()-0.5)*10; pos[j*3+1]=(Math.random()-0.5)*10; pos[j*3+2]=(Math.random()-0.5)*10;
+      col[j*3]=0.05+Math.random()*0.5; col[j*3+1]=0.3+Math.random()*0.3; col[j*3+2]=0.24+Math.random()*0.1;
+    }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
+    geo.setAttribute('color', new THREE.BufferAttribute(col,3));
+    const pts = new THREE.Points(geo, new THREE.PointsMaterial({size:0.06, vertexColors:true, transparent:true, opacity:0.7}));
+    scene.add(pts);
+    let t=Math.random()*100;
+    (function(p,r,s,c){ function loop(){ requestAnimationFrame(loop); t+=0.006; p.rotation.y=t*0.5; p.rotation.x=t*0.3; const w=canvas.parentElement.clientWidth,h=canvas.parentElement.clientHeight; if(w&&h){r.setSize(w,h);c.aspect=w/h;c.updateProjectionMatrix();} r.render(s,c); } loop(); })(pts, renderer, scene, camera);
+  }
+  // DM hero canvas
+  const dmCanvas = document.getElementById('dm-canvas');
+  if(dmCanvas && !dmCanvas.dataset.init){
+    dmCanvas.dataset.init='1';
+    const renderer = new THREE.WebGLRenderer({canvas:dmCanvas, alpha:true, antialias:true});
+    renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60,1,0.1,100);
+    camera.position.z=5;
+    const geos = [];
+    for(let j=0;j<12;j++){
+      const g = new THREE.BoxGeometry(0.2,0.2+Math.random()*1.5,0.2);
+      const m = new THREE.MeshPhongMaterial({color:0x0d4a3e,emissive:0x051a16,transparent:true,opacity:0.6});
+      const mesh = new THREE.Mesh(g,m);
+      mesh.position.set((Math.random()-0.5)*6,(Math.random()-0.5)*4,(Math.random()-0.5)*4);
+      scene.add(mesh);
+      geos.push(mesh);
+    }
+    scene.add(new THREE.PointLight(0xc9a84c,2,15));
+    scene.add(new THREE.AmbientLight(0x0d4a3e,0.5));
+    function resizeDM(){ const w=dmCanvas.parentElement.clientWidth,h=dmCanvas.parentElement.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+    resizeDM(); window.addEventListener('resize',resizeDM);
+    let t=0;
+    (function loop(){ requestAnimationFrame(loop); t+=0.01; geos.forEach((m,i)=>{ m.rotation.y=t*(0.5+i*0.1); m.rotation.x=t*0.3; }); renderer.render(scene,camera); })();
+  }
+}
+
+// ============ EVENTS CANVAS ============
+function initEvCanvases(){
+  const canvas = document.getElementById('ev-canvas-hero');
+  if(!canvas || canvas.dataset.init || !window.THREE) return;
+  canvas.dataset.init='1';
+  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60,1,0.1,100);
+  camera.position.z=5;
+  for(let i=0;i<8;i++){
+    const geo = new THREE.CylinderGeometry(0.02,0.02,4,8);
+    const mat = new THREE.MeshBasicMaterial({color:0x0d4a3e, transparent:true, opacity:0.5});
+    const cyl = new THREE.Mesh(geo,mat);
+    cyl.position.set(Math.sin(i/8*Math.PI*2)*3, 0, Math.cos(i/8*Math.PI*2)*3);
+    scene.add(cyl);
+  }
+  const geo = new THREE.BufferGeometry();
+  const N=600;
+  const pos=new Float32Array(N*3);
+  for(let i=0;i<N;i++){ pos[i*3]=(Math.random()-0.5)*14; pos[i*3+1]=(Math.random()-0.5)*8; pos[i*3+2]=(Math.random()-0.5)*8; }
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  const pts=new THREE.Points(geo, new THREE.PointsMaterial({color:0xc9a84c, size:0.05, transparent:true, opacity:0.5}));
+  scene.add(pts);
+  scene.add(new THREE.AmbientLight(0x0d4a3e,0.5));
+  function resize(){ const w=canvas.parentElement.clientWidth,h=canvas.parentElement.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize',resize);
+  let t=0;
+  (function loop(){ requestAnimationFrame(loop); t+=0.006; pts.rotation.y=t; renderer.render(scene,camera); })();
+}
+
+// Init VP hero canvas
+(function initVPHero(){
+  const canvas = document.getElementById('vp-canvas-hero');
+  if(!canvas || !window.THREE) return;
+  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60,1,0.1,100);
+  camera.position.z=5;
+  const group = new THREE.Group();
+  scene.add(group);
+  for(let i=0;i<5;i++){
+    const geo = new THREE.TorusGeometry(1+i*0.5, 0.01+i*0.005, 16, 100);
+    const mat = new THREE.MeshBasicMaterial({color:i%2===0?0x0d4a3e:0xc9a84c, transparent:true, opacity:0.3-i*0.04});
+    const ring = new THREE.Mesh(geo,mat);
+    ring.rotation.x = Math.random()*Math.PI;
+    ring.rotation.y = Math.random()*Math.PI;
+    group.add(ring);
+  }
+  const N=600; const geo=new THREE.BufferGeometry(); const pos=new Float32Array(N*3);
+  for(let i=0;i<N;i++){ pos[i*3]=(Math.random()-0.5)*14; pos[i*3+1]=(Math.random()-0.5)*8; pos[i*3+2]=(Math.random()-0.5)*8; }
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  scene.add(new THREE.Points(geo, new THREE.PointsMaterial({color:0x1a6b59, size:0.04, transparent:true, opacity:0.5})));
+  scene.add(new THREE.AmbientLight(0x0d4a3e,0.3));
+  scene.add(new THREE.PointLight(0xc9a84c,2,15));
+  function resize(){ const w=canvas.parentElement.clientWidth,h=canvas.parentElement.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize',resize);
+  let t=0;
+  (function loop(){ requestAnimationFrame(loop); t+=0.005; group.rotation.y=t; group.rotation.x=t*0.4; renderer.render(scene,camera); })();
+})();
+
+// Init wedding hero canvas
+(function initWedHero(){
+  const canvas = document.getElementById('wed-canvas-hero');
+  if(!canvas || !window.THREE) return;
+  const renderer = new THREE.WebGLRenderer({canvas, alpha:true, antialias:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60,1,0.1,100);
+  camera.position.z=5;
+  const N=1200; const geo=new THREE.BufferGeometry(); const pos=new Float32Array(N*3); const col=new Float32Array(N*3);
+  for(let i=0;i<N;i++){
+    pos[i*3]=(Math.random()-0.5)*16; pos[i*3+1]=(Math.random()-0.5)*10; pos[i*3+2]=(Math.random()-0.5)*10;
+    const g=Math.random(); col[i*3]=g*0.8; col[i*3+1]=g*0.65; col[i*3+2]=g*0.3;
+  }
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('color',new THREE.BufferAttribute(col,3));
+  const pts=new THREE.Points(geo, new THREE.PointsMaterial({size:0.035, vertexColors:true, transparent:true, opacity:0.6}));
+  scene.add(pts);
+  function resize(){ const w=canvas.parentElement.clientWidth,h=canvas.parentElement.clientHeight; renderer.setSize(w,h); camera.aspect=w/h; camera.updateProjectionMatrix(); }
+  resize(); window.addEventListener('resize',resize);
+  let t=0;
+  (function loop(){ requestAnimationFrame(loop); t+=0.003; pts.rotation.y=t; pts.rotation.x=Math.sin(t*0.5)*0.15; renderer.render(scene,camera); })();
+})();
+
+</script>
+</body>
+</html>
